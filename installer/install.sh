@@ -61,8 +61,24 @@ install_systemd() {
 }
 
 install_udev() {
+  local serial_rule="$UDEV_RULES_DIR/99-serial.rules"
+  local serial_backup="$RASPIKE_ROOT/backups/udev/99-serial.rules.original"
+
   log "udev rule を配置します"
-  install_file "$REPO_ROOT/packages/udev/99-raspike.rules" "$UDEV_RULES_DIR/99-raspike.rules" 0644
+
+  if [[ -f "$serial_rule" ]] && ! grep -q "$RASPIKE_MANAGED_MARKER" "$serial_rule"; then
+    if [[ ! -f "$serial_backup" ]]; then
+      log "既存の libspike 由来 udev rule をバックアップします: $serial_backup"
+      install_file "$serial_rule" "$serial_backup" 0644 root root
+    else
+      log "udev rule のバックアップは既に存在します: $serial_backup"
+    fi
+  fi
+
+  # libraspike-art のセットアップが /dev/USB_SPIKE を実機に割り当てる
+  # /etc/udev/rules.d/99-serial.rules を作るため、platform 管理版で置き換えます。
+  # /dev/USB_SPIKE は bridge が作る PTY に使うので、実機は /dev/raspike-real に固定します。
+  install_file "$REPO_ROOT/packages/udev/99-serial.rules" "$serial_rule" 0644
 }
 
 install_network_dispatcher() {

@@ -7,6 +7,7 @@ Raspberry Pi 起動時に ET ロボコン用のローカルサービスを安定
 - `raspike-bridge.service` と `raspike-web.service` はローカルサービスとして systemd で常駐起動します。
 - bridge / web-ui は学校 Wi-Fi 認証に依存しません。認証に失敗してもロボット操作系は起動できます。
 - USB デバイス名の固定は udev が担当し、実機デバイスは `/dev/raspike-real` として扱います。
+- libraspike-art が作る `/etc/udev/rules.d/99-serial.rules` は platform 管理版へ置き換え、元ファイルは uninstall で復元できるようバックアップします。
 - 学校 Wi-Fi の SSID 検知と認証起動だけを NetworkManager dispatcher が担当します。
 - `raspike-network-auth.service` と `raspike-update.service` は oneshot で、通常は enable しません。
 - `update.sh` は bridge / web の更新だけを担当し、既存 web をバックアップしてから差し替えます。
@@ -83,6 +84,7 @@ sudo ./installer/uninstall.sh --remove-data
 
 - `/opt/raspike/config/raspike.env`: systemd service 共通設定、bridge/web/update の既定値。
 - `/opt/raspike/config/wifi-auth.env`: 学校 Wi-Fi 認証情報。`600` 権限を想定し、パスワードは script に直書きしません。
+- `/opt/raspike/backups/udev/99-serial.rules.original`: install 前に存在した `/etc/udev/rules.d/99-serial.rules` のバックアップ。
 - `packages/config/wifi-auth.example.env`: `wifi-auth.env` のテンプレート。
 
 ## systemd Services
@@ -135,8 +137,11 @@ udev デバイス確認:
 
 ```bash
 ls -l /dev/raspike-real
+ls -l /dev/USB_SPIKE
 udevadm info -a -n /dev/ttyACM0
 ```
+
+`/dev/USB_SPIKE` が実機 ttyACM ではなく bridge の PTY を指していることを確認してください。実機 SPIKE Hub は `/dev/raspike-real` として扱います。
 
 network-auth 単体実行:
 

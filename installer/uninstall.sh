@@ -48,9 +48,21 @@ remove_services() {
 }
 
 remove_network_and_udev() {
+  local serial_rule="$UDEV_RULES_DIR/99-serial.rules"
+  local serial_backup="$RASPIKE_ROOT/backups/udev/99-serial.rules.original"
+
   log "dispatcher と udev rule を削除します"
   rm -f "$NM_DISPATCHER_DIR/90-raspike-school-auth"
-  rm -f "$UDEV_RULES_DIR/99-raspike.rules"
+
+  if [[ -f "$serial_backup" ]]; then
+    log "install 前の 99-serial.rules を復元します: $serial_rule"
+    install_file "$serial_backup" "$serial_rule" 0644 root root
+  elif [[ -f "$serial_rule" ]] && grep -q "$RASPIKE_MANAGED_MARKER" "$serial_rule"; then
+    log "platform 管理の 99-serial.rules を削除します"
+    rm -f "$serial_rule"
+  else
+    log "99-serial.rules は platform 管理外のため変更しません"
+  fi
 }
 
 remove_data_if_requested() {

@@ -7,6 +7,7 @@ set -euo pipefail
 RASPIKE_ROOT="${RASPIKE_ROOT:-/opt/raspike}"
 RASPIKE_USER="${RASPIKE_USER:-raspike}"
 RASPIKE_GROUP="${RASPIKE_GROUP:-$RASPIKE_USER}"
+RASPIKE_MANAGED_MARKER="raspike-platform managed file"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -54,6 +55,7 @@ ensure_dirs() {
   install -d -m 0755 "$RASPIKE_ROOT"
   install -d -m 0755 "$RASPIKE_ROOT/apps/bridge"
   install -d -m 0755 "$RASPIKE_ROOT/apps/web"
+  install -d -m 0755 "$RASPIKE_ROOT/backups/udev"
   install -d -m 0755 "$RASPIKE_ROOT/config"
   install -d -m 0755 "$RASPIKE_ROOT/scripts"
   install -d -m 0755 "$RASPIKE_ROOT/logs"
