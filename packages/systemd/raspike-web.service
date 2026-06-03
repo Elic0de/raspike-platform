@@ -1,6 +1,6 @@
 [Unit]
 Description=RasPike local web control UI
-Documentation=https://github.com/Elic0de/raspike-web-control
+Documentation=https://github.com/Elic0de/raspike-web-control-v3
 After=local-fs.target raspike-bridge.service
 Wants=raspike-bridge.service
 

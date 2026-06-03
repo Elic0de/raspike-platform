@@ -41,7 +41,7 @@ sudo ./installer/install.sh
 ```bash
 sudo BRIDGE_REPO_URL=https://github.com/Elic0de/raspike-bridge-ps5.git \
   BRIDGE_REF=main \
-  WEB_RELEASE_REPO=Elic0de/raspike-web-control \
+  WEB_RELEASE_REPO=Elic0de/raspike-web-control-v3 \
   WEB_RELEASE_ASSET=dist.zip \
   ./installer/install.sh
 ```
@@ -65,6 +65,8 @@ sudo systemctl start raspike-update.service
 ```
 
 `BRIDGE_REF`、`WEB_RELEASE_REPO`、`WEB_RELEASE_ASSET` は `/opt/raspike/config/raspike.env` で変更できます。web は差し替え前に `/opt/raspike/apps/web.backup.YYYYmmddHHMMSS` へバックアップされます。
+
+web release の `dist.zip` には、Vite の静的成果物 `dist/` に加えて `server.mjs` を同梱してください。platform は展開後に `/opt/raspike/apps/web/server.mjs` を systemd で起動します。
 
 ## Uninstall
 

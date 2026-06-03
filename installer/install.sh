@@ -7,9 +7,16 @@ source "$SCRIPT_DIR/lib.sh"
 
 BRIDGE_REPO_URL="${BRIDGE_REPO_URL:-https://github.com/Elic0de/raspike-bridge-ps5.git}"
 BRIDGE_REF="${BRIDGE_REF:-main}"
-WEB_RELEASE_REPO="${WEB_RELEASE_REPO:-Elic0de/raspike-web-control}"
+WEB_RELEASE_REPO="${WEB_RELEASE_REPO:-Elic0de/raspike-web-control-v3}"
 WEB_RELEASE_ASSET="${WEB_RELEASE_ASSET:-dist.zip}"
 WEB_DIST_URL="${WEB_DIST_URL:-$(github_latest_asset_url "$WEB_RELEASE_REPO" "$WEB_RELEASE_ASSET")}"
+
+validate_web_bundle() {
+  local web_dir="$1"
+
+  [[ -f "$web_dir/server.mjs" ]] || die "web bundle に server.mjs がありません: $web_dir"
+  [[ -f "$web_dir/dist/index.html" ]] || die "web bundle に dist/index.html がありません: $web_dir"
+}
 
 install_bridge() {
   require_command git
@@ -40,6 +47,7 @@ install_web() {
   rm -rf "$tmpdir/web"
   mkdir -p "$tmpdir/web"
   unzip -q "$tmpdir/dist.zip" -d "$tmpdir/web"
+  validate_web_bundle "$tmpdir/web"
 
   backup_path "$RASPIKE_ROOT/apps/web"
   mkdir -p "$RASPIKE_ROOT/apps"

@@ -27,9 +27,16 @@ else
 fi
 
 BRIDGE_REF="${BRIDGE_REF:-main}"
-WEB_RELEASE_REPO="${WEB_RELEASE_REPO:-Elic0de/raspike-web-control}"
+WEB_RELEASE_REPO="${WEB_RELEASE_REPO:-Elic0de/raspike-web-control-v3}"
 WEB_RELEASE_ASSET="${WEB_RELEASE_ASSET:-dist.zip}"
 WEB_DIST_URL="${WEB_DIST_URL:-$(github_latest_asset_url "$WEB_RELEASE_REPO" "$WEB_RELEASE_ASSET")}"
+
+validate_web_bundle() {
+  local web_dir="$1"
+
+  [[ -f "$web_dir/server.mjs" ]] || die "web bundle に server.mjs がありません: $web_dir"
+  [[ -f "$web_dir/dist/index.html" ]] || die "web bundle に dist/index.html がありません: $web_dir"
+}
 
 update_bridge() {
   require_command git
@@ -58,6 +65,7 @@ update_web() {
   download_file "$WEB_DIST_URL" "$tmpdir/dist.zip"
   mkdir -p "$tmpdir/web"
   unzip -q "$tmpdir/dist.zip" -d "$tmpdir/web"
+  validate_web_bundle "$tmpdir/web"
 
   log "web をバックアップして差し替えます"
   if [[ -d "$web_dir" ]]; then
