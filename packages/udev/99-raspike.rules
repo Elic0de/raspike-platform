@@ -1,0 +1,16 @@
+# RasPike USB device aliases.
+#
+# この rule は LEGO SPIKE Prime Hub が /dev/ttyACM* として認識されたときに、
+# 安定した別名 /dev/raspike-real を作ります。
+#
+# 既存プロジェクトが使う /dev/USB_SPIKE は bridge が作る PTY として残し、
+# udev では直接上書きしません。実機デバイスと仮想デバイスを分離するためです。
+#
+# 環境によって idVendor/idProduct が異なる場合があります。次のコマンドで確認し、
+# 必要なら ATTRS{idVendor}/ATTRS{idProduct} を調整してください。
+#
+#   udevadm info -a -n /dev/ttyACM0 | less
+#   lsusb
+#
+# LEGO SPIKE Prime Hub は一般的に ttyACM として現れます。
+SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{idVendor}=="0694", SYMLINK+="raspike-real", GROUP="dialout", MODE="0660"

@@ -1,0 +1,9 @@
+# Local editor and OS files
+.DS_Store
+.vscode/
+.idea/
+
+# Runtime artifacts should live on the Raspberry Pi under /opt/raspike.
+*.log
+*.bak.*
+dist.zip

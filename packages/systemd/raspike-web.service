@@ -1,0 +1,19 @@
+[Unit]
+Description=RasPike local web control UI
+Documentation=https://github.com/Elic0de/raspike-web-control
+After=local-fs.target raspike-bridge.service
+Wants=raspike-bridge.service
+
+[Service]
+Type=simple
+User=raspike
+Group=raspike
+WorkingDirectory=/opt/raspike/apps/web
+EnvironmentFile=/opt/raspike/config/raspike.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/env node server.mjs
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

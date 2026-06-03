@@ -1,0 +1,18 @@
+[Unit]
+Description=RasPike school Wi-Fi authentication
+Documentation=file:/opt/raspike/scripts/school-auth.sh
+After=NetworkManager.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=raspike
+Group=raspike
+EnvironmentFile=/opt/raspike/config/raspike.env
+EnvironmentFile=-/opt/raspike/config/wifi-auth.env
+ExecStart=/opt/raspike/scripts/school-auth.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

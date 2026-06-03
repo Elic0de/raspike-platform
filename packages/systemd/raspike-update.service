@@ -1,0 +1,17 @@
+[Unit]
+Description=RasPike bridge/web update
+Documentation=file:/opt/raspike/scripts/update.sh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+EnvironmentFile=/opt/raspike/config/raspike.env
+ExecStart=/opt/raspike/scripts/update.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
