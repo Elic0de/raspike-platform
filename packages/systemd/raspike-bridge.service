@@ -8,8 +8,14 @@ Wants=systemd-udev-settle.service
 Type=simple
 User=raspike
 Group=raspike
+SupplementaryGroups=dialout input
 WorkingDirectory=/opt/raspike/apps/bridge
 EnvironmentFile=/opt/raspike/config/raspike.env
+# bridge は /dev/USB_SPIKE を実機ではなく PTY の symlink として作ります。
+# User=raspike のまま /dev 配下の symlink を差し替えるため、DAC 権限だけ付与します。
+AmbientCapabilities=CAP_DAC_OVERRIDE
+CapabilityBoundingSet=CAP_DAC_OVERRIDE
+NoNewPrivileges=false
 # USB 接続直後の取りこぼしを避けるため、一定時間だけ /dev/raspike-real を待ちます。
 # 見つからない場合は正常終了し、落ち続ける状態を避けます。USB 接続後は手動 restart できます。
 ExecStart=/bin/bash -lc 'for i in $(seq 1 ${RASPIKE_DEVICE_WAIT_RETRIES:-20}); do if [[ -e "${RASPIKE_REAL_DEVICE:-/dev/raspike-real}" ]]; then exec /opt/raspike/apps/bridge/start.sh; fi; sleep "${RASPIKE_DEVICE_WAIT_SEC:-1}"; done; echo "RasPike device not found: ${RASPIKE_REAL_DEVICE:-/dev/raspike-real}"; exit 0'

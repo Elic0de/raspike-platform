@@ -62,11 +62,19 @@ run_as_raspike() {
 ensure_user() {
   if id "$RASPIKE_USER" >/dev/null 2>&1; then
     log "ユーザー '$RASPIKE_USER' は既に存在します"
-    return
+  else
+    log "ユーザー '$RASPIKE_USER' を作成します"
+    useradd --system --create-home --shell /bin/bash "$RASPIKE_USER"
   fi
 
-  log "ユーザー '$RASPIKE_USER' を作成します"
-  useradd --system --create-home --shell /bin/bash "$RASPIKE_USER"
+  local groups=()
+  getent group dialout >/dev/null 2>&1 && groups+=(dialout)
+  getent group input >/dev/null 2>&1 && groups+=(input)
+
+  if [[ ${#groups[@]} -gt 0 ]]; then
+    log "ユーザー '$RASPIKE_USER' を補助グループに追加します: ${groups[*]}"
+    usermod -aG "$(IFS=,; printf '%s' "${groups[*]}")" "$RASPIKE_USER"
+  fi
 }
 
 ensure_dirs() {

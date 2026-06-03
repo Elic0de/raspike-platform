@@ -108,6 +108,7 @@ sudo ./installer/uninstall.sh --remove-data
 ## systemd Services
 
 - `raspike-bridge.service`: bridge と PS5 controller を起動します。`/dev/raspike-real` を一定時間待ち、見つからない場合は正常終了して再起動ループを避けます。
+- bridge は `User=raspike` のまま `/dev/USB_SPIKE` を PTY symlink として作るため、`CAP_DAC_OVERRIDE` を付与しています。`/dev/USB_SPIKE` は udev では作りません。
 - `raspike-web.service`: ローカル web-ui を起動します。
 - `raspike-network-auth.service`: 学校 Wi-Fi 認証用の oneshot service です。dispatcher から必要時のみ起動します。
 - `raspike-update.service`: bridge/web 更新用の oneshot service です。手動実行、または認証成功後の任意起動に使います。
