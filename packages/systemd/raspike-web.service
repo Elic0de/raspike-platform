@@ -11,7 +11,7 @@ Group=raspike
 WorkingDirectory=/opt/raspike/apps/web
 EnvironmentFile=/opt/raspike/config/raspike.env
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/env node server.mjs
+ExecStart=/opt/raspike/scripts/run-web.sh
 Restart=on-failure
 RestartSec=5
 

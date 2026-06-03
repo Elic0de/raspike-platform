@@ -41,6 +41,14 @@ BRIDGE_REF="${BRIDGE_REF:-main}"
 WEB_RELEASE_REPO="${WEB_RELEASE_REPO:-Elic0de/raspike-web-control-v3}"
 WEB_RELEASE_ASSET="${WEB_RELEASE_ASSET:-dist.zip}"
 WEB_DIST_URL="${WEB_DIST_URL:-$(github_latest_asset_url "$WEB_RELEASE_REPO" "$WEB_RELEASE_ASSET")}"
+UPDATE_WEB_TMPDIR=""
+
+cleanup_update() {
+  if [[ -n "${UPDATE_WEB_TMPDIR:-}" ]]; then
+    rm -rf "$UPDATE_WEB_TMPDIR"
+  fi
+}
+trap cleanup_update EXIT
 
 validate_web_bundle() {
   local web_dir="$1"
@@ -70,9 +78,8 @@ update_web() {
   require_command unzip
   local web_dir="$RASPIKE_ROOT/apps/web"
   local backup_dir="$RASPIKE_ROOT/apps/web.backup.$(date +%Y%m%d%H%M%S)"
-  local tmpdir
-  tmpdir="$(mktemp -d)"
-  trap 'rm -rf "$tmpdir"' RETURN
+  UPDATE_WEB_TMPDIR="$(mktemp -d)"
+  local tmpdir="$UPDATE_WEB_TMPDIR"
 
   download_file "$WEB_DIST_URL" "$tmpdir/dist.zip"
   mkdir -p "$tmpdir/web"
@@ -95,6 +102,9 @@ update_web() {
     fi
     die "web 更新に失敗しました"
   fi
+
+  rm -rf "$tmpdir"
+  UPDATE_WEB_TMPDIR=""
 }
 
 restart_services() {

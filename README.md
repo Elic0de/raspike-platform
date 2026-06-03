@@ -82,6 +82,7 @@ sudo systemctl start raspike-update.service
 `BRIDGE_REF`、`WEB_RELEASE_REPO`、`WEB_RELEASE_ASSET` は `/opt/raspike/config/raspike.env` で変更できます。web は差し替え前に `/opt/raspike/apps/web.backup.YYYYmmddHHMMSS` へバックアップされます。
 
 web release の `dist.zip` には、Vite の静的成果物 `dist/` に加えて `server.mjs` を同梱してください。platform は展開後に `/opt/raspike/apps/web/server.mjs` を systemd で起動します。
+`raspike-web.service` は `/opt/raspike/scripts/run-web.sh` 経由で起動し、`node`、`nodejs`、または `RASPIKE_NODE_BIN` を探します。Node.js が無い環境では install 時に `apt-get install -y nodejs` を試します。
 
 ## Uninstall
 
@@ -142,6 +143,20 @@ journalctl -u raspike-bridge.service -f
 journalctl -u raspike-web.service -f
 journalctl -u raspike-network-auth.service -n 100
 ```
+
+`raspike-web.service` で `/usr/bin/env: 'node': No such file or directory` が出る場合:
+
+```bash
+command -v node
+command -v nodejs
+sudo command -v node || true
+sudo command -v nodejs || true
+sudo apt-get update
+sudo apt-get install -y nodejs
+sudo systemctl restart raspike-web.service
+```
+
+通常ユーザーの nvm で入れた Node.js は、`sudo` や systemd の PATH から見えないことがあります。systemd で安定運用する場合は apt の `nodejs` を入れるか、`/opt/raspike/config/raspike.env` に `RASPIKE_NODE_BIN=/path/to/node` を設定してください。
 
 SSID 確認:
 

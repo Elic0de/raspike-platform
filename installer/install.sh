@@ -10,12 +10,41 @@ BRIDGE_REF="${BRIDGE_REF:-main}"
 WEB_RELEASE_REPO="${WEB_RELEASE_REPO:-Elic0de/raspike-web-control-v3}"
 WEB_RELEASE_ASSET="${WEB_RELEASE_ASSET:-dist.zip}"
 WEB_DIST_URL="${WEB_DIST_URL:-$(github_latest_asset_url "$WEB_RELEASE_REPO" "$WEB_RELEASE_ASSET")}"
+INSTALL_WEB_TMPDIR=""
+
+cleanup_install() {
+  if [[ -n "${INSTALL_WEB_TMPDIR:-}" ]]; then
+    rm -rf "$INSTALL_WEB_TMPDIR"
+  fi
+}
+trap cleanup_install EXIT
 
 validate_web_bundle() {
   local web_dir="$1"
 
   [[ -f "$web_dir/server.mjs" ]] || die "web bundle に server.mjs がありません: $web_dir"
   [[ -f "$web_dir/dist/index.html" ]] || die "web bundle に dist/index.html がありません: $web_dir"
+}
+
+ensure_node_runtime() {
+  if command -v node >/dev/null 2>&1 || command -v nodejs >/dev/null 2>&1; then
+    log "Node.js runtime は既に利用できます"
+    return
+  fi
+
+  if [[ "${RASPIKE_SKIP_NODE_INSTALL:-false}" == "true" ]]; then
+    warn "Node.js runtime が見つかりません。raspike-web.service 起動前に node または nodejs を用意してください"
+    return
+  fi
+
+  if command -v apt-get >/dev/null 2>&1; then
+    log "Node.js runtime が見つからないため apt-get で nodejs をインストールします"
+    apt-get update
+    apt-get install -y nodejs
+    return
+  fi
+
+  warn "Node.js runtime が見つからず、自動インストールもできません。raspike-web.service 起動前に node または nodejs を用意してください"
 }
 
 install_bridge() {
@@ -38,9 +67,8 @@ install_bridge() {
 
 install_web() {
   require_command unzip
-  local tmpdir
-  tmpdir="$(mktemp -d)"
-  trap 'rm -rf "$tmpdir"' RETURN
+  INSTALL_WEB_TMPDIR="$(mktemp -d)"
+  local tmpdir="$INSTALL_WEB_TMPDIR"
 
   download_file "$WEB_DIST_URL" "$tmpdir/dist.zip"
 
@@ -54,6 +82,8 @@ install_web() {
   mkdir -p "$RASPIKE_ROOT/apps"
   mv "$tmpdir/web" "$RASPIKE_ROOT/apps/web"
   chown -R "$RASPIKE_USER:$RASPIKE_GROUP" "$RASPIKE_ROOT/apps/web"
+  rm -rf "$tmpdir"
+  INSTALL_WEB_TMPDIR=""
 }
 
 install_configs() {
@@ -100,6 +130,10 @@ install_update_script() {
   install_file "$REPO_ROOT/installer/update.sh" "$RASPIKE_ROOT/scripts/update.sh" 0755 "$RASPIKE_USER" "$RASPIKE_GROUP"
 }
 
+install_web_runner() {
+  install_file "$REPO_ROOT/packages/scripts/run-web.sh" "$RASPIKE_ROOT/scripts/run-web.sh" 0755 "$RASPIKE_USER" "$RASPIKE_GROUP"
+}
+
 main() {
   require_root
   require_command install
@@ -107,6 +141,7 @@ main() {
 
   ensure_user
   ensure_dirs
+  ensure_node_runtime
   install_bridge
   install_web
   install_configs
@@ -114,6 +149,7 @@ main() {
   install_udev
   install_network_dispatcher
   install_update_script
+  install_web_runner
 
   log "systemd と udev を再読み込みします"
   systemctl_if_available daemon-reload
