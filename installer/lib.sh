@@ -40,6 +40,25 @@ require_command() {
   command -v "$cmd" >/dev/null 2>&1 || die "必要なコマンドがありません: $cmd"
 }
 
+run_as_raspike() {
+  if [[ "$(id -u)" -eq "$(id -u "$RASPIKE_USER")" ]]; then
+    "$@"
+    return
+  fi
+
+  if command -v runuser >/dev/null 2>&1; then
+    runuser -u "$RASPIKE_USER" -- "$@"
+    return
+  fi
+
+  if command -v sudo >/dev/null 2>&1; then
+    sudo -u "$RASPIKE_USER" -- "$@"
+    return
+  fi
+
+  die "runuser または sudo が見つからないため '$RASPIKE_USER' として実行できません"
+}
+
 ensure_user() {
   if id "$RASPIKE_USER" >/dev/null 2>&1; then
     log "ユーザー '$RASPIKE_USER' は既に存在します"

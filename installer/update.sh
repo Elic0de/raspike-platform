@@ -19,6 +19,17 @@ else
   github_latest_asset_url() { printf 'https://github.com/%s/releases/latest/download/%s' "$1" "$2"; }
   download_file() { require_command curl; curl --fail --location --retry 3 --retry-delay 2 --output "$2" "$1"; }
   systemctl_if_available() { command -v systemctl >/dev/null 2>&1 && systemctl "$@" || true; }
+  run_as_raspike() {
+    if [[ "$(id -u)" -eq "$(id -u "$RASPIKE_USER")" ]]; then
+      "$@"
+    elif command -v runuser >/dev/null 2>&1; then
+      runuser -u "$RASPIKE_USER" -- "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+      sudo -u "$RASPIKE_USER" -- "$@"
+    else
+      die "runuser または sudo が見つからないため '$RASPIKE_USER' として実行できません"
+    fi
+  }
 
   if [[ -r "$RASPIKE_ROOT/config/raspike.env" ]]; then
     # shellcheck source=/dev/null
@@ -48,9 +59,10 @@ update_bridge() {
   fi
 
   log "bridge を更新します: ref=$BRIDGE_REF"
-  git -C "$bridge_dir" fetch --all --tags --prune
-  git -C "$bridge_dir" checkout "$BRIDGE_REF"
-  git -C "$bridge_dir" pull --ff-only
+  chown -R "$RASPIKE_USER:$RASPIKE_GROUP" "$bridge_dir"
+  run_as_raspike git -C "$bridge_dir" fetch --all --tags --prune
+  run_as_raspike git -C "$bridge_dir" checkout "$BRIDGE_REF"
+  run_as_raspike git -C "$bridge_dir" pull --ff-only
   chown -R "$RASPIKE_USER:$RASPIKE_GROUP" "$bridge_dir"
 }
 

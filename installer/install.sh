@@ -23,13 +23,14 @@ install_bridge() {
 
   if [[ -d "$RASPIKE_ROOT/apps/bridge/.git" ]]; then
     log "bridge repo は既に clone 済みです。fetch して $BRIDGE_REF に合わせます"
-    git -C "$RASPIKE_ROOT/apps/bridge" fetch --all --tags --prune
-    git -C "$RASPIKE_ROOT/apps/bridge" checkout "$BRIDGE_REF"
-    git -C "$RASPIKE_ROOT/apps/bridge" pull --ff-only || warn "bridge の pull に失敗しました。ローカル状態を確認してください"
+    chown -R "$RASPIKE_USER:$RASPIKE_GROUP" "$RASPIKE_ROOT/apps/bridge"
+    run_as_raspike git -C "$RASPIKE_ROOT/apps/bridge" fetch --all --tags --prune
+    run_as_raspike git -C "$RASPIKE_ROOT/apps/bridge" checkout "$BRIDGE_REF"
+    run_as_raspike git -C "$RASPIKE_ROOT/apps/bridge" pull --ff-only || warn "bridge の pull に失敗しました。ローカル状態を確認してください"
   else
     log "bridge repo を clone します: $BRIDGE_REPO_URL"
     rm -rf "$RASPIKE_ROOT/apps/bridge"
-    git clone --branch "$BRIDGE_REF" "$BRIDGE_REPO_URL" "$RASPIKE_ROOT/apps/bridge"
+    run_as_raspike git clone --branch "$BRIDGE_REF" "$BRIDGE_REPO_URL" "$RASPIKE_ROOT/apps/bridge"
   fi
 
   chown -R "$RASPIKE_USER:$RASPIKE_GROUP" "$RASPIKE_ROOT/apps/bridge"
