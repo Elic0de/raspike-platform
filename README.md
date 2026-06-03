@@ -32,6 +32,21 @@ Raspberry Pi 起動時に ET ロボコン用のローカルサービスを安定
 
 Raspberry Pi 上で実行します。
 
+ワンライナーで実行する場合:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Elic0de/raspike-platform/main/scripts/install.sh | sudo bash
+```
+
+branch/tag や取得元を変える場合:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Elic0de/raspike-platform/main/scripts/install.sh \
+  | sudo env RASPIKE_PLATFORM_REF=main bash
+```
+
+repo を clone 済みの場合:
+
 ```bash
 sudo ./installer/install.sh
 ```
