@@ -63,6 +63,23 @@ install_bridge() {
   fi
 
   chown -R "$RASPIKE_USER:$RASPIKE_GROUP" "$RASPIKE_ROOT/apps/bridge"
+  cleanup_legacy_raspike_tty
+}
+
+cleanup_legacy_raspike_tty() {
+  local raspike_home
+  raspike_home="$(getent passwd "$RASPIKE_USER" 2>/dev/null | cut -d: -f6 || true)"
+  if [[ -z "$raspike_home" ]]; then
+    return
+  fi
+
+  local legacy_link="$raspike_home/raspike-tty"
+  if [[ -L "$legacy_link" ]]; then
+    log "古い raspike-tty symlink を削除します: $legacy_link"
+    rm -f "$legacy_link"
+  elif [[ -e "$legacy_link" ]]; then
+    warn "古い raspike-tty が通常ファイル/ディレクトリのため削除しません: $legacy_link"
+  fi
 }
 
 install_web() {
