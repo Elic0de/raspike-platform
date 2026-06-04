@@ -117,6 +117,8 @@ sudo ./installer/uninstall.sh --remove-data
 
 NetworkManager dispatcher は `wlan0` が `up` になった時だけ動きます。`iwgetid -r wlan0` で取得した SSID が `SCHOOL_WIFI_SSID` と一致する場合のみ `raspike-network-auth.service` を起動します。
 
+認証 script は `http://connectivitycheck.gstatic.com/generate_204` が `204 No Content` を返す場合は何もせず終了します。未認証の場合は `http://10.1.1.1/auth?redirect=http://connectivitycheck.gstatic.com/generate_204` に `userid` / `password` を POST し、2 秒後に同じ 204 check でオンライン判定します。
+
 認証情報を設定します。
 
 ```bash

@@ -13,7 +13,7 @@ log() {
   local message="[raspike-network-auth] $*"
   printf '%s\n' "$message"
   mkdir -p "$(dirname "$LOG_FILE")"
-  printf '%s %s\n' "$(date --iso-8601=seconds)" "$message" >> "$LOG_FILE"
+  printf '%s %s\n' "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$message" >> "$LOG_FILE"
 }
 
 die() {
@@ -29,64 +29,60 @@ fi
 source "$AUTH_ENV"
 
 SCHOOL_AUTH_URL="${SCHOOL_AUTH_URL:-}"
-SCHOOL_AUTH_METHOD="${SCHOOL_AUTH_METHOD:-POST}"
-SCHOOL_AUTH_USERNAME="${SCHOOL_AUTH_USERNAME:-}"
-SCHOOL_AUTH_PASSWORD="${SCHOOL_AUTH_PASSWORD:-}"
-SCHOOL_AUTH_USERNAME_FIELD="${SCHOOL_AUTH_USERNAME_FIELD:-username}"
+SCHOOL_AUTH_USERNAME="${SCHOOL_AUTH_USERNAME:-${USERID:-}}"
+SCHOOL_AUTH_PASSWORD="${SCHOOL_AUTH_PASSWORD:-${PASSWORD:-}}"
+SCHOOL_AUTH_USERNAME_FIELD="${SCHOOL_AUTH_USERNAME_FIELD:-userid}"
 SCHOOL_AUTH_PASSWORD_FIELD="${SCHOOL_AUTH_PASSWORD_FIELD:-password}"
 SCHOOL_AUTH_EXTRA_FORM="${SCHOOL_AUTH_EXTRA_FORM:-}"
-SCHOOL_AUTH_SUCCESS_PATTERN="${SCHOOL_AUTH_SUCCESS_PATTERN:-}"
 SCHOOL_AUTH_TIMEOUT_SEC="${SCHOOL_AUTH_TIMEOUT_SEC:-15}"
+SCHOOL_AUTH_CHECK_URL="${SCHOOL_AUTH_CHECK_URL:-http://connectivitycheck.gstatic.com/generate_204}"
+SCHOOL_AUTH_CHECK_PATTERN="${SCHOOL_AUTH_CHECK_PATTERN:-204 No Content}"
+SCHOOL_AUTH_RETRY_WAIT_SEC="${SCHOOL_AUTH_RETRY_WAIT_SEC:-2}"
 
 [[ -n "$SCHOOL_AUTH_URL" ]] || die "SCHOOL_AUTH_URL が未設定です"
 [[ -n "$SCHOOL_AUTH_USERNAME" ]] || die "SCHOOL_AUTH_USERNAME が未設定です"
 [[ -n "$SCHOOL_AUTH_PASSWORD" ]] || die "SCHOOL_AUTH_PASSWORD が未設定です"
 command -v curl >/dev/null 2>&1 || die "curl が見つかりません"
 
-tmp_response="$(mktemp)"
-trap 'rm -f "$tmp_response"' EXIT
+is_online() {
+  curl --silent --head --max-time "$SCHOOL_AUTH_TIMEOUT_SEC" "$SCHOOL_AUTH_CHECK_URL" \
+    | grep -q "$SCHOOL_AUTH_CHECK_PATTERN"
+}
+
+if is_online; then
+  log "既にオンラインです"
+  exit 0
+fi
 
 log "学校 Wi-Fi 認証を開始します: $SCHOOL_AUTH_URL"
 
 curl_args=(
-  --fail
-  --location
   --silent
   --show-error
   --max-time "$SCHOOL_AUTH_TIMEOUT_SEC"
-  --output "$tmp_response"
+  --output /dev/null
+  --data "$SCHOOL_AUTH_USERNAME_FIELD=$SCHOOL_AUTH_USERNAME"
+  --data "$SCHOOL_AUTH_PASSWORD_FIELD=$SCHOOL_AUTH_PASSWORD"
 )
 
-if [[ "$SCHOOL_AUTH_METHOD" == "POST" ]]; then
-  curl_args+=(
-    --request POST
-    --data-urlencode "$SCHOOL_AUTH_USERNAME_FIELD=$SCHOOL_AUTH_USERNAME"
-    --data-urlencode "$SCHOOL_AUTH_PASSWORD_FIELD=$SCHOOL_AUTH_PASSWORD"
-  )
-
-  if [[ -n "$SCHOOL_AUTH_EXTRA_FORM" ]]; then
-    # SCHOOL_AUTH_EXTRA_FORM は "key=value&key2=value2" 形式を想定します。
-    IFS='&' read -r -a extra_pairs <<< "$SCHOOL_AUTH_EXTRA_FORM"
-    for pair in "${extra_pairs[@]}"; do
-      [[ -n "$pair" ]] && curl_args+=(--data-urlencode "$pair")
-    done
-  fi
-else
-  curl_args+=(--request "$SCHOOL_AUTH_METHOD")
+if [[ -n "$SCHOOL_AUTH_EXTRA_FORM" ]]; then
+  # SCHOOL_AUTH_EXTRA_FORM は "key=value&key2=value2" 形式を想定します。
+  IFS='&' read -r -a extra_pairs <<< "$SCHOOL_AUTH_EXTRA_FORM"
+  for pair in "${extra_pairs[@]}"; do
+    [[ -n "$pair" ]] && curl_args+=(--data "$pair")
+  done
 fi
 
 if ! curl "${curl_args[@]}" "$SCHOOL_AUTH_URL"; then
   die "認証リクエストに失敗しました"
 fi
 
-if [[ -n "$SCHOOL_AUTH_SUCCESS_PATTERN" ]]; then
-  if grep -q "$SCHOOL_AUTH_SUCCESS_PATTERN" "$tmp_response"; then
-    log "認証成功を確認しました"
-  else
-    die "成功パターンがレスポンスに見つかりません"
-  fi
+sleep "$SCHOOL_AUTH_RETRY_WAIT_SEC"
+
+if is_online; then
+  log "認証成功を確認しました"
 else
-  log "認証リクエストが成功しました"
+  die "オンライン判定に失敗しました"
 fi
 
 if [[ "${RASPIKE_RUN_UPDATE_AFTER_AUTH:-false}" == "true" ]]; then
