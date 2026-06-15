@@ -130,6 +130,11 @@ install_update_script() {
   install_file "$REPO_ROOT/installer/update.sh" "$RASPIKE_ROOT/scripts/update.sh" 0755 "$RASPIKE_USER" "$RASPIKE_GROUP"
 }
 
+install_platform_version_script() {
+  install_file "$REPO_ROOT/packages/scripts/platform-version.sh" "$RASPIKE_ROOT/scripts/platform-version.sh" 0755 "$RASPIKE_USER" "$RASPIKE_GROUP"
+  install_file "$REPO_ROOT/packages/scripts/platform-version.sh" "/usr/local/bin/raspike-platform-version" 0755 root root
+}
+
 install_web_runner() {
   install_file "$REPO_ROOT/packages/scripts/run-web.sh" "$RASPIKE_ROOT/scripts/run-web.sh" 0755 "$RASPIKE_USER" "$RASPIKE_GROUP"
 }
@@ -149,7 +154,9 @@ main() {
   install_udev
   install_network_dispatcher
   install_update_script
+  install_platform_version_script
   install_web_runner
+  write_platform_version
 
   log "systemd と udev を再読み込みします"
   systemctl_if_available daemon-reload

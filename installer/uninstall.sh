@@ -45,6 +45,7 @@ remove_services() {
   rm -f "$SYSTEMD_DIR/raspike-web.service"
   rm -f "$SYSTEMD_DIR/raspike-network-auth.service"
   rm -f "$SYSTEMD_DIR/raspike-update.service"
+  rm -f /usr/local/bin/raspike-platform-version
 }
 
 remove_network_and_udev() {

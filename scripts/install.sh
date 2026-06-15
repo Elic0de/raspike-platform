@@ -33,6 +33,23 @@ require_command curl
 require_command tar
 require_command mktemp
 
+if [[ -z "${RASPIKE_PLATFORM_COMMIT:-}" ]]; then
+  RASPIKE_PLATFORM_COMMIT="$(
+    curl --fail --silent --location --retry 3 --retry-delay 2 \
+      "https://api.github.com/repos/${RASPIKE_PLATFORM_REPO}/commits/${RASPIKE_PLATFORM_REF}" \
+      | sed -n 's/^[[:space:]]*"sha": "\([0-9a-f]\{40\}\)",[[:space:]]*$/\1/p' \
+      | head -n 1
+  )" || true
+  export RASPIKE_PLATFORM_COMMIT
+fi
+if [[ -z "${RASPIKE_PLATFORM_DESCRIBE:-}" && -n "${RASPIKE_PLATFORM_COMMIT:-}" ]]; then
+  RASPIKE_PLATFORM_DESCRIBE="${RASPIKE_PLATFORM_COMMIT:0:7}"
+  export RASPIKE_PLATFORM_DESCRIBE
+fi
+export RASPIKE_PLATFORM_REPO
+export RASPIKE_PLATFORM_REF
+export RASPIKE_PLATFORM_ARCHIVE_URL
+
 tmpdir="$(mktemp -d)"
 cleanup() {
   rm -rf "$tmpdir"

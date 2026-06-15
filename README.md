@@ -21,9 +21,11 @@ Raspberry Pi 起動時に ET ロボコン用のローカルサービスを安定
 │   └── web/
 ├── config/
 │   ├── raspike.env
+│   ├── platform-version.env
 │   └── wifi-auth.env
 ├── scripts/
 │   ├── school-auth.sh
+│   ├── platform-version.sh
 │   └── update.sh
 └── logs/
 ```
@@ -67,6 +69,16 @@ install 後、bridge/web だけが enable されます。
 sudo systemctl start raspike-bridge.service raspike-web.service
 ```
 
+## Version
+
+インストール済みの `raspike-platform` は次のコマンドで確認できます。
+
+```bash
+raspike-platform-version
+```
+
+同じ内容は `/opt/raspike/config/platform-version.env` に保存されます。
+
 ## Update
 
 ```bash
@@ -101,6 +113,7 @@ sudo ./installer/uninstall.sh --remove-data
 ## 設定ファイル
 
 - `/opt/raspike/config/raspike.env`: systemd service 共通設定、bridge/web/update の既定値。
+- `/opt/raspike/config/platform-version.env`: install 時に保存した `raspike-platform` の取得元 ref / commit。
 - `/opt/raspike/config/wifi-auth.env`: 学校 Wi-Fi 認証情報。`600` 権限を想定し、パスワードは script に直書きしません。
 - `/opt/raspike/backups/udev/99-serial.rules.original`: install 前に存在した `/etc/udev/rules.d/99-serial.rules` のバックアップ。
 - `packages/config/wifi-auth.example.env`: `wifi-auth.env` のテンプレート。

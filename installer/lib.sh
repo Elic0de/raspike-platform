@@ -8,6 +8,7 @@ RASPIKE_ROOT="${RASPIKE_ROOT:-/opt/raspike}"
 RASPIKE_USER="${RASPIKE_USER:-raspike}"
 RASPIKE_GROUP="${RASPIKE_GROUP:-$RASPIKE_USER}"
 RASPIKE_MANAGED_MARKER="raspike-platform managed file"
+RASPIKE_PLATFORM_VERSION_FILE="${RASPIKE_PLATFORM_VERSION_FILE:-$RASPIKE_ROOT/config/platform-version.env}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -146,4 +147,57 @@ systemctl_if_available() {
   else
     warn "systemctl が見つからないためスキップします: systemctl $*"
   fi
+}
+
+platform_git_value() {
+  local key="$1"
+
+  if [[ ! -d "$REPO_ROOT/.git" ]] || ! command -v git >/dev/null 2>&1; then
+    return 1
+  fi
+
+  case "$key" in
+    commit)
+      git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null
+      ;;
+    describe)
+      git -C "$REPO_ROOT" describe --tags --always --dirty 2>/dev/null
+      ;;
+    ref)
+      git -C "$REPO_ROOT" branch --show-current 2>/dev/null \
+        || git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null
+      ;;
+    repo)
+      git -C "$REPO_ROOT" remote get-url origin 2>/dev/null
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+write_platform_version() {
+  local installed_at source_repo source_ref source_archive commit describe
+
+  installed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  source_repo="${RASPIKE_PLATFORM_REPO:-$(platform_git_value repo || true)}"
+  source_ref="${RASPIKE_PLATFORM_REF:-$(platform_git_value ref || true)}"
+  source_archive="${RASPIKE_PLATFORM_ARCHIVE_URL:-}"
+  commit="${RASPIKE_PLATFORM_COMMIT:-$(platform_git_value commit || true)}"
+  describe="${RASPIKE_PLATFORM_DESCRIBE:-$(platform_git_value describe || true)}"
+  if [[ -z "$describe" && -n "$commit" ]]; then
+    describe="${commit:0:7}"
+  fi
+
+  install -d -m 0755 -o "$RASPIKE_USER" -g "$RASPIKE_GROUP" "$(dirname "$RASPIKE_PLATFORM_VERSION_FILE")"
+  {
+    printf 'RASPIKE_PLATFORM_INSTALLED_AT=%q\n' "$installed_at"
+    printf 'RASPIKE_PLATFORM_REPO=%q\n' "$source_repo"
+    printf 'RASPIKE_PLATFORM_REF=%q\n' "$source_ref"
+    printf 'RASPIKE_PLATFORM_ARCHIVE_URL=%q\n' "$source_archive"
+    printf 'RASPIKE_PLATFORM_COMMIT=%q\n' "$commit"
+    printf 'RASPIKE_PLATFORM_DESCRIBE=%q\n' "$describe"
+  } > "$RASPIKE_PLATFORM_VERSION_FILE"
+  chown "$RASPIKE_USER:$RASPIKE_GROUP" "$RASPIKE_PLATFORM_VERSION_FILE"
+  chmod 0644 "$RASPIKE_PLATFORM_VERSION_FILE"
 }
